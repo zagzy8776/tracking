@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIPPOST GLOBAL | Official Tracking & Logistics</title>
+
+    <meta name="description" content="Official Shippost Global Tracking. Real-time updates for domestic and international shipments.">
+    <meta name="keywords" content="Tracking, Logistics, Shipping, Ohio, Maryland, Global Freight">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Shippost Global | Track Your Asset">
+    <meta property="og:description" content="Enter your waybill for real-time GPS location and delivery status.">
+    <meta property="og:image" content="https://yourwebsite.com/logo-preview.jpg"> <meta property="og:url" content="https://yourusername.github.io/tracking/">
+
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/709/709790.png"
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --brand-blue: #003366; /* USPS/FedEx style Navy */
+            --brand-orange: #FF6600; /* FedEx/TNT accent */
+            --brand-yellow: #FFCC00; /* DHL style */
+            --light-gray: #f7f7f7;
+            --dark-text: #333333;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #ffffff;
+            color: var(--dark-text);
+            margin: 0;
+        }
+
+        /* OFFICIAL TOP BAR */
+        .utility-nav {
+            background: var(--brand-blue);
+            color: white;
+            font-size: 12px;
+            padding: 8px 0;
+            font-weight: bold;
+        }
+
+        /* MAIN HEADER */
+        .main-header {
+            background: white;
+            border-bottom: 4px solid var(--brand-orange);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--brand-blue);
+            text-decoration: none;
+            letter-spacing: -1px;
+        }
+
+        /* HERO TRACKING SECTION */
+        .hero-tracking {
+            background: linear-gradient(rgba(0,51,102,0.8), rgba(0,51,102,0.8)), url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            padding: 80px 0;
+            color: white;
+            text-align: center;
+        }
+
+        .search-box {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            max-width: 700px;
+            margin: 30px auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .search-box input {
+            border: none;
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 18px;
+            outline: none;
+        }
+        .btn-track {
+            background: var(--brand-orange);
+            color: white;
+            border: none;
+            padding: 0 40px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+
+        /* MAP AREA */
+        #map { 
+            height: 450px; 
+            width: 100%;
+            border-bottom: 5px solid var(--brand-blue);
+        }
+
+        /* SHIPMENT DETAILS */
+        .detail-card {
+            background: white;
+            border: 1px solid #ddd;
+            margin-top: -50px;
+            position: relative;
+            z-index: 100;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .status-header {
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* PROGRESS BAR */
+        .tracking-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 40px 0;
+        }
+        .step { text-align: center; flex: 1; position: relative; }
+        .step-icon {
+            width: 40px; height: 40px; background: #eee; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 10px; font-weight: bold;
+        }
+        .step.active .step-icon { background: var(--brand-blue); color: white; }
+        .step.active .step-label { color: var(--brand-blue); font-weight: bold; }
+
+        /* BIG CORPORATE FOOTER */
+        .carrier-footer {
+            background: #222;
+            color: #ccc;
+            padding: 60px 0 30px;
+            margin-top: 80px;
+            font-size: 14px;
+        }
+        .footer-title { color: white; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; font-size: 16px; }
+        .footer-link { color: #ccc; text-decoration: none; display: block; margin-bottom: 8px; }
+        .footer-link:hover { color: var(--brand-orange); }
+        .footer-bottom { border-top: 1px solid #444; margin-top: 40px; padding-top: 20px; font-size: 12px; }
+
+        @media (max-width: 768px) { .search-box { flex-direction: column; border-radius: 10px; } .btn-track { padding: 15px; } }
+    </style>
+</head>
+<body>
+
+<div class="utility-nav no-print">
+    <div class="container d-flex justify-content-between">
+        <div>SHIPPING | TRACKING | BUSINESS SOLUTIONS</div>
+        <div>CUSTOMER SERVICE: 1-800-SHIPPOST</div>
+    </div>
+</div>
+
+<header class="main-header no-print">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a href="#" class="logo">SHIPPOST<span style="color:var(--brand-orange)">GLOBAL</span></a>
+        <div class="d-none d-md-flex gap-4 fw-bold small">
+            <span>Quick Tools</span>
+            <span>Locations</span>
+            <span>Support</span>
+        </div>
+    </div>
+</header>
+
+<section class="hero-tracking no-print">
+    <div class="container">
+        <h1 class="display-5 fw-bold">Track Your Shipment</h1>
+        <p>Enter your tracking number to get real-time updates.</p>
+        <div class="search-box">
+            <input type="text" id="trackInput" placeholder="Tracking Number (e.g. SP-44901)">
+            <button class="btn-track" onclick="traceAssets()">Track</button>
+        </div>
+    </div>
+</section>
+
+<div id="map" class="no-print"></div>
+
+<div class="container">
+    <div id="resultsArea"></div>
+</div>
+
+<div id="faq-section" style="display:none;" class="container my-5">
+    <h2>Frequently Asked Questions</h2>
+    <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">How long does shipping take?</button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">Shipping times vary based on origin, destination, and service level. Standard shipping typically takes 3-5 business days domestically.</div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">What if my package is lost?</button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">Contact our customer service immediately. We offer full refunds or replacements for lost packages within our guaranteed delivery windows.</div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">Can I track my shipment?</button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">Yes, use the tracking tool above with your tracking number for real-time updates.</div>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-secondary mt-3" onclick="hideSection('faq')">Close</button>
+</div>
+
+<div id="site-index-section" style="display:none;" class="container my-5">
+    <h2>Site Index</h2>
+    <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Track Shipment</a></li>
+        <li><a href="#">Contact Us</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Locations</a></li>
+    </ul>
+    <button class="btn btn-secondary mt-3" onclick="hideSection('site-index')">Close</button>
+</div>
+
+<div id="calculate-price-section" style="display:none;" class="container my-5">
+    <h2>Shipping Rate Calculator</h2>
+    <form>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="fromZip" class="form-label">From ZIP Code</label>
+                <input type="text" class="form-control" id="fromZip" placeholder="Enter ZIP">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="toZip" class="form-label">To ZIP Code</label>
+                <input type="text" class="form-control" id="toZip" placeholder="Enter ZIP">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="packageType" class="form-label">Package Type</label>
+                <select class="form-select" id="packageType">
+                    <option value="envelope">Envelope</option>
+                    <option value="pak">Pak</option>
+                    <option value="box" selected>Box</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="weight" class="form-label">Weight (lbs)</label>
+                <input type="number" class="form-control" id="weight" placeholder="Enter weight" step="0.1">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="serviceType" class="form-label">Service Type</label>
+                <select class="form-select" id="serviceType">
+                    <option value="ground">Ground</option>
+                    <option value="express">Express</option>
+                    <option value="overnight">Overnight</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="length" class="form-label">Length (in)</label>
+                <input type="number" class="form-control" id="length" placeholder="Length">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="width" class="form-label">Width (in)</label>
+                <input type="number" class="form-control" id="width" placeholder="Width">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="height" class="form-label">Height (in)</label>
+                <input type="number" class="form-control" id="height" placeholder="Height">
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="calculatePrice()">Get Rates</button>
+        <div id="priceResult" class="mt-3"></div>
+    </form>
+    <button class="btn btn-secondary mt-3" onclick="hideSection('calculate-price')">Close</button>
+</div>
+
+<footer class="carrier-footer no-print">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="footer-title">Helpful Links</div>
+                <a href="#" class="footer-link" onclick="showSection('contact')">Contact Us</a>
+                <a href="#" class="footer-link" onclick="showSection('faq')">FAQs</a>
+                <a href="#" class="footer-link" onclick="showSection('site-index')">Site Index</a>
+            </div>
+            <div class="col-md-3">
+                <div class="footer-title">About Shippost</div>
+                <a href="#" class="footer-link">Company Info</a>
+                <a href="#" class="footer-link">Newsroom</a>
+                <a href="#" class="footer-link">Careers</a>
+            </div>
+            <div class="col-md-3">
+                <div class="footer-title">Forms & Tools</div>
+                <a href="#" class="footer-link" onclick="showSection('calculate-price')">Calculate Price</a>
+                <a href="#" class="footer-link">Find a Location</a>
+                <a href="#" class="footer-link">Schedule a Pickup</a>
+            </div>
+            <div class="col-md-3 text-end">
+                <div class="logo mb-3" style="color:white">SHIPPOST</div>
+                <p>Global Headquarters<br>10200 McKalla Place, Suite 200 Austin, Tx 78758</p>
+            </div>
+        </div>
+        <div class="footer-bottom d-flex justify-content-between">
+            <p>© 2026 Shippost Global. All Rights Reserved. | Privacy Policy | Terms of Use</p>
+            <div>ISO 9001 CERTIFIED</div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRE3-XFLZL73XGyzdMOkW7M4Ptb5yjptntt6uU2xllxKFNy6zI2UHIoEUksarx8hFIQd3mJxAG1zfjV/pub?output=csv&cb=" + Date.now();
+    let map, markers = [];
+
+    window.onload = () => {
+        map = L.map('map', { zoomControl: false }).setView([20, 0], 2);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+    };
+
+    function traceAssets() {
+        const id = document.getElementById('trackInput').value.trim().toLowerCase();
+        Papa.parse(SHEET_URL, {
+            download: true, header: true,
+            complete: (res) => {
+                const data = res.data.filter(r => r.Code && r.Code.toLowerCase() === id);
+                if(data.length > 0) {
+                    renderResult(data[0]);
+                    syncMap(data[0]);
+                } else {
+                    alert("Tracking number not found.");
+                }
+            }
+        });
+    }
+
+    function renderResult(item) {
+        const area = document.getElementById('resultsArea');
+        const p = parseInt(item.Progress) || 0;
+        
+        area.innerHTML = `
+            <div class="detail-card">
+                <div class="status-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold">Tracking ID: ${item.Code}</h4>
+                        <span class="text-uppercase small fw-bold text-muted">Status: <span class="text-primary">${item.Status}</span></span>
+                    </div>
+                    <div id="qr-box"></div>
+                </div>
+
+                <div class="tracking-steps">
+                    <div class="step ${p >= 10 ? 'active' : ''}">
+                        <div class="step-icon">1</div>
+                        <div class="step-label small">Accepted</div>
+                    </div>
+                    <div class="step ${p >= 50 ? 'active' : ''}">
+                        <div class="step-icon">2</div>
+                        <div class="step-label small">In Transit</div>
+                    </div>
+                    <div class="step ${p >= 90 ? 'active' : ''}">
+                        <div class="step-icon">3</div>
+                        <div class="step-label small">Out for Delivery</div>
+                    </div>
+                    <div class="step ${p >= 100 ? 'active' : ''}">
+                        <div class="step-icon">4</div>
+                        <div class="step-label small">Delivered</div>
+                    </div>
+                </div>
+
+                <div class="row bg-light p-4 rounded mt-4">
+                    <div class="col-md-3">
+                        <small class="text-muted fw-bold">ORIGIN</small><br>
+                        <span class="fw-bold text-uppercase">${item.Origin || 'Los Angeles, CA'}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted fw-bold">CURRENT LOCATION</small><br>
+                        <span class="fw-bold text-uppercase">${item.Location}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted fw-bold">DESTINATION</small><br>
+                        <span class="fw-bold text-uppercase">${item.Destination || 'Pending'}</span>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button class="btn btn-dark btn-sm" onclick="window.print()">Print Details</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const qr = qrcode(0, 'M');
+        qr.addData(window.location.href);
+        qr.make();
+        document.getElementById('qr-box').innerHTML = qr.createImgTag(2);
+    }
+
+    function syncMap(item) {
+        markers.forEach(m => map.removeLayer(m));
+        const lat = parseFloat(item.Lat), lng = parseFloat(item.Long);
+        if(!isNaN(lat)) {
+            const m = L.marker([lat, lng]).addTo(map).bindPopup(item.Location).openPopup();
+            markers.push(m);
+            map.flyTo([lat, lng], 10);
+        }
+    }
+
+    function showSection(id) {
+        document.getElementById(id + '-section').style.display = 'block';
+    }
+
+    function hideSection(id) {
+        document.getElementById(id + '-section').style.display = 'none';
+    }
+
+    function calculatePrice() {
+        const fromZip = document.getElementById('fromZip').value;
+        const toZip = document.getElementById('toZip').value;
+        const packageType = document.getElementById('packageType').value;
+        const weight = parseFloat(document.getElementById('weight').value) || 0;
+        const serviceType = document.getElementById('serviceType').value;
+        const length = parseFloat(document.getElementById('length').value) || 0;
+        const width = parseFloat(document.getElementById('width').value) || 0;
+        const height = parseFloat(document.getElementById('height').value) || 0;
+
+        if (!fromZip || !toZip) {
+            document.getElementById('priceResult').innerHTML = '<p class="text-danger">Please enter From and To ZIP codes.</p>';
+            return;
+        }
+
+        // Mock distance calculation (in reality, use ZIP to coords)
+        const mockDistance = Math.abs(parseInt(fromZip.slice(-3)) - parseInt(toZip.slice(-3))) * 10 || 100;
+
+        // Base rates
+        const baseRates = {
+            ground: 10,
+            express: 20,
+            overnight: 40
+        };
+
+        // Multipliers
+        const weightMultiplier = 0.5;
+        const dimMultiplier = 0.01;
+        const distanceMultiplier = 0.05;
+
+        const services = [
+            { name: 'Ground', transit: '1-5 days', base: baseRates.ground },
+            { name: 'Express', transit: '1-2 days', base: baseRates.express },
+            { name: 'Overnight', transit: 'Next day', base: baseRates.overnight }
+        ];
+
+        let tableHtml = '<h4>Shipping Rates</h4><table class="table table-striped"><thead><tr><th>Service</th><th>Transit Time</th><th>Rate</th></tr></thead><tbody>';
+
+        services.forEach(service => {
+            const rate = service.base + (weight * weightMultiplier) + ((length + width + height) * dimMultiplier) + (mockDistance * distanceMultiplier);
+            tableHtml += `<tr><td>${service.name}</td><td>${service.transit}</td><td>$${rate.toFixed(2)}</td></tr>`;
+        });
+
+        tableHtml += '</tbody></table>';
+        document.getElementById('priceResult').innerHTML = tableHtml;
+    }
+</script>
+</body>
+</html>
